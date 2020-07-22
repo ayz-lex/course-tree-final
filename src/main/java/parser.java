@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.util.Stack;
 import java.io.FileWriter;
 
 import org.jsoup.Jsoup;
@@ -8,7 +9,6 @@ import org.jsoup.select.Elements;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-
 
 public class parser {
 
@@ -67,22 +67,9 @@ public class parser {
 			} 
 			
 			// parse string, and figure out and/or/parentheses stuff
-			int i = 0;
-			while (i < prereqString.length()) {
-				
-				switch(prereqString.charAt(i)) {
-					case '(':
-						break;
-					case ')':
-						break;
-					case 'o':
-						break;
-					case 'a':
-						break;
-					
-				}
-
-			}
+			
+			//build a tree first, and then figure out everything else
+			
 			
 		}
 		
