@@ -34,5 +34,4 @@ public class InternalNode {
 		obj.put(this.type, arr);
 		return obj;
 	}
-	
 }

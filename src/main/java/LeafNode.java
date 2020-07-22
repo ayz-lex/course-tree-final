@@ -15,5 +15,4 @@ public class LeafNode {
 		obj.put("val", this.val);
 		return obj;
 	}
-	
 }
