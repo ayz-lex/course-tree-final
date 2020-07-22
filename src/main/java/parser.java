@@ -64,13 +64,21 @@ public class parser {
 						break;
 					}
 				}
-			} 
-			
-			// parse string, and figure out and/or/parentheses stuff
-			
-			//build a tree first, and then figure out everything else
-			
-			
+				// parse string, and figure out and/or/parentheses stuff
+				
+				// TODO: build tree
+				
+				JSONObject tree;
+				
+				if (prereqString.length() == 8) {
+					tree = new LeafNode(prereqString).JSONify();
+				} else {
+					tree = createNode(prereqString, 0, prereqString.length()).JSONify();
+				}				
+			} else {
+				// no listed prereqs
+				
+			}
 		}
 		
 		try (FileWriter file = new FileWriter("classes.json")) {
@@ -81,5 +89,36 @@ public class parser {
 		}
 
 	}
-
+	
+	private static InternalNode createNode(String str, int i, int end) {
+		String type = "";
+		
+		if (str.charAt(i) == '(') {
+			int j = i;
+			while (str.charAt(j) != ')') {
+				++j;
+			}
+			j += 2;
+			type = str.charAt(j) == 'a' ? "and" : "or";
+		} else {
+			type = str.charAt(i + 9) == 'a' ? "and" : "or";
+		}
+		
+		InternalNode node = new InternalNode(type);
+		
+		while (i < end) {
+			if (str.charAt(i) == '(') {
+				int j = i;
+				while (str.charAt(j) != ')') {
+					++j;
+				}
+				node.addInternal(createNode(str, i + 1, j));
+			} else {
+				node.addLeaf(new LeafNode(str.substring(i, i + 8)));
+				i += type == "and" ? 13 : 12;
+			}
+		}
+		
+		return node;
+	}
 }
