@@ -26,6 +26,8 @@ public class parser {
 		// setup JSONArray
 		JSONObject classes = new JSONObject();
 		
+		JSONArray classList = new JSONArray();
+		
 		for (Element block: blocks) {
 			
 			// get class code (e.g. COMP 382)
@@ -48,6 +50,8 @@ public class parser {
 					}
 				}
 			}
+			
+			classList.add(title);
 						
 			// get prerequisite class codes (e.g. COMP 182 or COMP 140)
 			// prereqString = prereqs
@@ -66,9 +70,7 @@ public class parser {
 					}
 				}
 				// parse string, and figure out and/or/parentheses stuff
-				
-				// TODO: build tree
-				
+								
 				JSONObject tree;
 				
 				if (prereqString.length() == 8) {
@@ -82,16 +84,19 @@ public class parser {
 			}
 		}
 		
-		/*
-		try (FileWriter file = new FileWriter("classes.json")) {
-			file.write(classes.toJSONString());
+		writeToFile(classes.toJSONString(), "classes.json");
+		writeToFile(classList.toJSONString(), "classList.json");
+		
+	}
+	
+	private static void writeToFile(String obj, String route) {
+		try (FileWriter file = new FileWriter(route)) {
+			file.write(obj);
 			file.flush();
 			file.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		*/
-
 	}
 	
 	private static InternalNode createNode(String str, int i, int end) {
