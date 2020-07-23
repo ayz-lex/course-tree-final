@@ -46,3 +46,4 @@ String str = "COMP 100 and (COMP 300 or COMP 400)";
 ## Todos
 
 1. Standardize such that parser works on and string with strings containing `and` or `or` or `(` and `)`.
+2. Write more edge case tests.
