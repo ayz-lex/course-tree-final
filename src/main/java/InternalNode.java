@@ -31,7 +31,8 @@ public class InternalNode {
 			arr.add(node.JSONify());
 		}
 		JSONObject obj = new JSONObject();
-		obj.put(this.type, arr);
+		obj.put("val", arr);
+		obj.put("type", this.type);
 		return obj;
 	}
 }

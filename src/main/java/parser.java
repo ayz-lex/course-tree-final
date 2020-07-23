@@ -16,6 +16,7 @@ public class parser {
 		// TODO Auto-generated method stub
 		
 		// get document from url
+		
 		String URL = "https://ga.rice.edu/programs-study/departments-programs/engineering/computer-science/#coursestext";
 		
 		Document doc = Jsoup.connect(URL).get();
@@ -23,7 +24,7 @@ public class parser {
 		Elements blocks = doc.getElementsByClass("courseblock");
 		
 		// setup JSONArray
-		JSONArray classes = new JSONArray();
+		JSONObject classes = new JSONObject();
 		
 		for (Element block: blocks) {
 			
@@ -55,7 +56,7 @@ public class parser {
 			Element parse = block.selectFirst("strong:contains(Prerequisite(s):)");
 			
 			String prereqString = "";
-			
+						
 			if (parse != null) {
 				String prereqText = parse.parent().text().trim();
 				for (int i = 0; i < prereqText.length(); i++) {
@@ -74,19 +75,22 @@ public class parser {
 					tree = new LeafNode(prereqString).JSONify();
 				} else {
 					tree = createNode(prereqString, 0, prereqString.length()).JSONify();
-				}				
+				}
+				classes.put(title, tree);
 			} else {
-				// no listed prereqs
-				
+				classes.put(title, new JSONObject());
 			}
 		}
 		
+		/*
 		try (FileWriter file = new FileWriter("classes.json")) {
 			file.write(classes.toJSONString());
 			file.flush();
+			file.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		*/
 
 	}
 	
@@ -97,6 +101,9 @@ public class parser {
 			int j = i;
 			while (str.charAt(j) != ')') {
 				++j;
+			}
+			if (j + 2 >= end) {
+				return createNode(str, i + 1, end - 1);
 			}
 			j += 2;
 			type = str.charAt(j) == 'a' ? "and" : "or";
@@ -113,6 +120,7 @@ public class parser {
 					++j;
 				}
 				node.addInternal(createNode(str, i + 1, j));
+				i = type == "and" ? j + 6 : j + 5;
 			} else {
 				node.addLeaf(new LeafNode(str.substring(i, i + 8)));
 				i += type == "and" ? 13 : 12;

@@ -13,6 +13,7 @@ public class LeafNode {
 	public JSONObject JSONify() {
 		JSONObject obj = new JSONObject();
 		obj.put("val", this.val);
+		obj.put("type", this.type);
 		return obj;
 	}
 }
