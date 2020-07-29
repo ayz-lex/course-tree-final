@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, {useEffect, useRef, useState} from 'react'
 import classList from './data/classList.json'
 import data from './data/classes.json'
 import * as d3 from 'd3'
@@ -14,45 +14,77 @@ append adds additional html content
 
 const App = () => {
   const ref = useRef()
-  
+  const [course, setCourse] = useState("");
+  const [search, setSearch] = useState(true);
+  const [tree, setTree] = useState();
+
   useEffect(() => {
-
     const svg = d3.select(ref.current)
-      .attr('width', 10000)
-      .attr('height', 10000)
-      .style('fill', '#f9f9f9')
-
-    const radius = classList.length 
-    const angleChange = classList.length
-
-    const coordinates = {cx: 50, cy: 50}
-
-    svg.selectAll('circle')
-      .data(classList)
-      .enter()
-      .append('circle')
-        .attr('r', 50)
-        .attr('cx', d => {
-          const holder = coordinates.cx
-          coordinates.cx += 3
-          return holder
-        })
-        .attr('cy', d => {
-          const holder = coordinates.cy
-          coordinates.cy += 80
-          return holder
-        })
-        .attr('stroke', 'black')
-        .attr('fill', 'white')
-        .append('text')
-          .text(d => {
-            return d
-          })
-
+    
   })
 
+  const onSearch = e => {
+    e.preventDefault()
+    if (data[course]) {
+      let heirarchy = {"name": course}
+
+      const recurse = (node, heirarchyNode) => {
+        if (node.type == "leaf") {
+          heirarchyNode.push({
+            "name": node.val
+          })
+        } else {
+          let children = []
+          node.val.forEach(cur => {
+            recurse(cur, children)
+          })
+          heirarchyNode.push({
+            "name": node.type,
+            "children": children
+          })
+        }
+      }
+
+      if (data[course].type) {
+        heirarchy["children"] = []
+        recurse(data[course], heirarchy["children"])
+      }
+
+      setTree(heirarchy)
+
+      setSearch(false)
+
+    } else {
+      alert('Class not Found')
+    }
+  }
+
+  const changeHandler = e => {
+    e.preventDefault()
+    setCourse(e.target.value)
+  }
+
   return (
-    <svg ref={ref}></svg>
+    <React.Fragment>
+      {search ? (
+        <form onSubmit={onSearch}>
+          <input 
+            label="Enter Class"
+            type="text"
+            name="course"
+            onChange={changeHandler}
+            required
+          />
+          <button>
+            Search
+          </button>
+        </form>
+      ) : (
+        <div>
+          <svg ref={ref}></svg>
+        </div>
+      )}
+    </React.Fragment>
   )
 }
 
