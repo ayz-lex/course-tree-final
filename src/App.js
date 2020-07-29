@@ -18,19 +18,37 @@ const App = () => {
   useEffect(() => {
 
     const svg = d3.select(ref.current)
-      .attr('width', 500)
-      .attr('height', 500)
+      .attr('width', 10000)
+      .attr('height', 10000)
       .style('fill', '#f9f9f9')
+
+    const radius = classList.length 
+    const angleChange = classList.length
+
+    const coordinates = {cx: 50, cy: 50}
 
     svg.selectAll('circle')
       .data(classList)
       .enter()
       .append('circle')
-        .attr('r', 20)
-        .style('fill', '#69b3a2')
+        .attr('r', 50)
+        .attr('cx', d => {
+          const holder = coordinates.cx
+          coordinates.cx += 3
+          return holder
+        })
+        .attr('cy', d => {
+          const holder = coordinates.cy
+          coordinates.cy += 80
+          return holder
+        })
+        .attr('stroke', 'black')
+        .attr('fill', 'white')
+        .append('text')
+          .text(d => {
+            return d
+          })
 
-    
-        
   })
 
   return (
