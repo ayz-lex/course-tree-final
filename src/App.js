@@ -137,29 +137,6 @@ const SVG = (props) => {
 
     cluster(root)
 
-    const mouseOverHandler = (d, i) => {
-      if (classList[d.data.name]) {
-        this.append("text")
-          .attr({
-          id: "t" + d.x + "-" + d.y + "-" + i,  // Create an id for text so we can select it later for removing on mouseout
-           x: d.x,
-           y: d.y
-          })
-          .text(classList[d.data.name])
-      }
-    }
-
-    const mouseOutHandler = (d, i) => {
-      // Select text by id and then remove
-      d3.select("#t" + d.x + "-" + d.y + "-" + i).remove();
-    }
-    
-    const onClickHandler = (d, i) => {
-      if (d.data.name !== "or" && d.data.name !== "and") {
-        props.newSearch(d.data.name)
-      }
-    }
-
     svg.selectAll('path')
       .data(root.descendants().slice(1))
       .enter()
@@ -179,6 +156,10 @@ const SVG = (props) => {
           }
         })
 
+    let tooltip = d3.select('body')
+      .append('div')
+      .attr('class', 'tooltip')
+
     svg.selectAll('g')
       .data(root.descendants())
       .enter()
@@ -191,7 +172,7 @@ const SVG = (props) => {
           if (d.data.name === "or" || d.data.name == "and") {
             return 1
           } else {
-            return 4
+            return 6
           }
         })
         .style('fill', '#f9f9f9')
@@ -204,10 +185,43 @@ const SVG = (props) => {
             return "pointer"
           }
         })
-        .on('mouseover', mouseOverHandler)
-        .on('mouseout', mouseOutHandler)
-        .on('click', onClickHandler)
+        .on('click', (d, i) => {
+          if (d.data.name !== "or" && d.data.name !== "and") {
+            props.newSearch(d.data.name)
+          }
+        })
+        .on('mouseover', (d, i) => {
+          if (classList[d.data.name]) {
+            return tooltip
+              .text(classList[d.data.name])
+              .style('visibility', 'visible')
+              .style('top', (d.x + 40) + 'px')
+              .style('left', (d.y + 80) + 'px')
+              .attr({
+                'position': 'absolute',
+                'z-index': '10',
+                'visibility': 'hidden',
+                'background-color': 'lightblue',
+                'text-align': 'center',
+                'padding': '4px',
+                'border-radius': '4px',
+                'font-weight': 'bold',
+                'color': 'orange'
+              })
+          }
+        })
+
     
+        /*
+        .append("svg:title")
+          .text(d => {
+            if (classList[d.data.name]) {
+              return classList[d.data.name]
+            } else {
+              return "no info"
+            }
+          })
+    */
     
     svg.selectAll('g')
       .append('text')
