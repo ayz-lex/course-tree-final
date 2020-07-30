@@ -19,14 +19,36 @@ const App = () => {
 
   const onSearch = e => {
     e.preventDefault()
+
+    let visited = new Set()
+
     if (data[course]) {
       let hierarchy = {"name": course}
 
+      visited.add(course)
+
       const buildHierarchy = (node, hierarchyNode) => {
         if (node.type === "leaf") {
-          hierarchyNode.push({
-            "name": node.val
-          })
+          if (!visited.has(node.val)) {
+            if (data[node.val] && data[node.val].type) {
+              visited.add(node.val)
+              let children = []
+              buildHierarchy(data[node.val], children)
+              hierarchyNode.push({
+                "name": node.val,
+                "children": children,
+              })
+            } else {
+              hierarchyNode.push({
+                "name": node.val
+              })
+              visited.add(node.val)
+            }  
+          } else {
+            hierarchyNode.push({
+              "name": node.val,
+            })
+          }
         } else {
           let children = []
           node.val.forEach(cur => {
@@ -45,7 +67,6 @@ const App = () => {
       }
 
       setTree(hierarchy)
-
       setSearch(false)
 
     } else {
@@ -75,7 +96,7 @@ const App = () => {
         </form>
       ) : (
         <div>
-          <SVG tree={{...tree}}/>
+          <SVG tree={{...tree}} setTree={setTree}/>
         </div>
       )}
     </React.Fragment>
@@ -86,17 +107,17 @@ const SVG = (props) => {
   const ref = useRef()
 
   useEffect(() => {
-    const height = 460
-    const width = 500
+    const height = 1000
+    const width = 1000
 
     const svg = d3.select(ref.current)
       .attr('width', width)
       .attr('height', height)
-    .append('g')
-      .attr("transform", "translate(40, 0)")
+      .append('g')
+        .attr("transform", "translate(40, 40)")
 
     const cluster = d3.cluster()
-      .size([height, width - 100])
+      .size([height - 100, width - 100])
 
     const root = d3.hierarchy(props.tree, d => {
       return d.children
@@ -108,14 +129,20 @@ const SVG = (props) => {
       .data(root.descendants().slice(1))
       .enter()
       .append('path')
-      .attr('d', d => {
-        return "M" + d.y + "," + d.x
-          + "C" + (d.parent.y + 50) + "," + d.x
-          + " " + (d.parent.y + 120) + "," + d.parent.x // 50 and 150 are coordinates of inflexion, play with it to change links shape
-          + " " + d.parent.y + "," + d.parent.x;
-      })
-      .style('fill', 'none')
-      .attr('stroke', '#ccc')
+        .attr('d', d => {
+          return "M" + d.y + "," + d.x
+            + "C" + (d.parent.y + 50) + "," + d.x
+            + " " + (d.parent.y + 120) + "," + d.parent.x // 50 and 150 are coordinates of inflexion, play with it to change links shape
+            + " " + d.parent.y + "," + d.parent.x;
+        })
+        .style('fill', "none")
+        .attr('stroke', d => {
+          if (d.parent.data.name === "or") {
+            return "red"
+          } else {
+            return "green"
+          }
+        })
 
     svg.selectAll('g')
       .data(root.descendants())
@@ -125,7 +152,13 @@ const SVG = (props) => {
         return "translate(" + d.y + "," + d.x + ")"
       })
       .append('circle')
-        .attr('r', 3)
+        .attr('r', d => {
+          if (d.data.name === "or" || d.data.name == "and") {
+            return 1
+          } else {
+            return 4
+          }
+        })
         .style('fill', '#f9f9f9')
         .attr('stroke', 'black')
         .style('stroke-width', 2)
@@ -133,15 +166,9 @@ const SVG = (props) => {
     svg.selectAll('g')
       .append('text')
         .text(d => {
-          console.log(d)
           return d.data.name
         })
-        .attr({
-          'font-size': 8,
-          'dx': -10,
-          'dy': 4
-        })
-
+        .style('font-size', 12)
   })
 
   return (
