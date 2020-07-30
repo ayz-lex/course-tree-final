@@ -27,7 +27,7 @@ public class parser {
 		JSONObject classes = new JSONObject();
 		
 		JSONArray classList = new JSONArray();
-		
+				
 		for (Element block: blocks) {
 			
 			// get class code (e.g. COMP 382)
@@ -51,8 +51,16 @@ public class parser {
 				}
 			}
 			
-			classList.add(title);
-						
+			//getDescription
+			Elements description = block.select("p.courseblockdesc");
+			String descriptionText = description.text().trim();
+			
+			JSONObject titleAndDescription = new JSONObject();
+			titleAndDescription.put("title", title);
+			titleAndDescription.put("description", descriptionText);
+			
+			classList.add(titleAndDescription);
+			
 			// get prerequisite class codes (e.g. COMP 182 or COMP 140)
 			// prereqString = prereqs
 			
@@ -75,10 +83,14 @@ public class parser {
 				
 				if (prereqString.length() == 8) {
 					tree = new LeafNode(prereqString).JSONify();
+
 				} else {
 					tree = createNode(prereqString, 0, prereqString.length()).JSONify();
+
 				}
 				classes.put(title, tree);
+				
+				
 			} else {
 				classes.put(title, new JSONObject());
 			}
@@ -98,7 +110,7 @@ public class parser {
 			e.printStackTrace();
 		}
 	}
-	
+		
 	private static InternalNode createNode(String str, int i, int end) {
 		String type = "";
 		

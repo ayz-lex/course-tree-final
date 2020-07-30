@@ -11,6 +11,11 @@ local.properties
 .loadpath
 .recommenders
 
+# json file management
+
+classList.json
+classes.json
+
 # External tool builders
 .externalToolBuilders/
 

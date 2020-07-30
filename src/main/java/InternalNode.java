@@ -4,9 +4,9 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 public class InternalNode {
-	private String type;
-	private ArrayList<LeafNode> leaves;
-	private ArrayList<InternalNode> internals;
+	public String type;
+	public ArrayList<LeafNode> leaves;
+	public ArrayList<InternalNode> internals;
 
 	public InternalNode(String type) {
 		this.type = type;
@@ -35,4 +35,5 @@ public class InternalNode {
 		obj.put("type", this.type);
 		return obj;
 	}
+	
 }
