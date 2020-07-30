@@ -17,9 +17,7 @@ const App = () => {
   const [search, setSearch] = useState(true);
   const [tree, setTree] = useState();
 
-  const onSearch = e => {
-    e.preventDefault()
-
+  const onSearch = () => {
     let visited = new Set()
 
     if (data[course]) {
@@ -74,15 +72,26 @@ const App = () => {
     }
   }
 
+  const searchHandler = e => {
+    e.preventDefault()
+    onSearch()
+  }
+
   const changeHandler = e => {
     e.preventDefault()
     setCourse(e.target.value)
   }
 
+  const newSearch = (newCourse) => {
+    setSearch(true)
+    setCourse(newCourse)
+    onSearch()
+  }
+
   return (
     <React.Fragment>
       {search ? (
-        <form onSubmit={onSearch}>
+        <form onSubmit={searchHandler}>
           <input 
             label="Enter Class"
             type="text"
@@ -96,7 +105,10 @@ const App = () => {
         </form>
       ) : (
         <div>
-          <SVG tree={{...tree}} setTree={setTree}/>
+          <SVG 
+            tree={{...tree}} 
+            newSearch={newSearch}
+          />
         </div>
       )}
     </React.Fragment>
@@ -124,6 +136,29 @@ const SVG = (props) => {
     })
 
     cluster(root)
+
+    const mouseOverHandler = (d, i) => {
+      if (classList[d.data.name]) {
+        this.append("text")
+          .attr({
+          id: "t" + d.x + "-" + d.y + "-" + i,  // Create an id for text so we can select it later for removing on mouseout
+           x: d.x,
+           y: d.y
+          })
+          .text(classList[d.data.name])
+      }
+    }
+
+    const mouseOutHandler = (d, i) => {
+      // Select text by id and then remove
+      d3.select("#t" + d.x + "-" + d.y + "-" + i).remove();
+    }
+    
+    const onClickHandler = (d, i) => {
+      if (d.data.name !== "or" && d.data.name !== "and") {
+        props.newSearch(d.data.name)
+      }
+    }
 
     svg.selectAll('path')
       .data(root.descendants().slice(1))
@@ -162,6 +197,17 @@ const SVG = (props) => {
         .style('fill', '#f9f9f9')
         .attr('stroke', 'black')
         .style('stroke-width', 2)
+        .attr('cursor', d => {
+          if (d.data.name === "or" || d.data.name == "and") {
+            return "none"
+          } else {
+            return "pointer"
+          }
+        })
+        .on('mouseover', mouseOverHandler)
+        .on('mouseout', mouseOutHandler)
+        .on('click', onClickHandler)
+    
     
     svg.selectAll('g')
       .append('text')
