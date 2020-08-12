@@ -1,21 +1,26 @@
 import React, {useEffect, useRef, useState} from 'react'
+
 import classList from './data/classList.json'
+import classTitleList from './data/classTitleList.json'
 import data from './data/classes.json'
+
 import * as d3 from 'd3'
 
-//select/ selectall selects dom element
-/*
-style adds css
-attr adds attributes
-text changes tag element
-append adds additional html content
-.data(data).enter().append() // data adds data, enter enters each data element, and everything that follows adds.
-*/
+import {
+  Select,
+  FormControl,
+  Button,
+  InputLabel,
+  MenuItem,
+} from '@material-ui/core'
+
+import {makeStyles} from '@material-ui/core/styles'
 
 const App = () => {
   const [course, setCourse] = useState("");
   const [search, setSearch] = useState(true);
   const [tree, setTree] = useState();
+  const [error, setError] = useState();
 
   const onSearch = () => {
     let visited = new Set()
@@ -64,11 +69,12 @@ const App = () => {
         buildHierarchy(data[course], hierarchy["children"])
       }
 
+      setError(false)
       setTree(hierarchy)
       setSearch(false)
 
     } else {
-      alert('Class not Found')
+      setError(true)
     }
   }
 
@@ -88,20 +94,48 @@ const App = () => {
     onSearch()
   }
 
+  const useStyles = makeStyles((theme) => ({
+    root: {
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingTop: window.innerHeight / 6,
+    },
+    button: {
+      width: '100px'
+    },
+    select: {
+      width: '100px'
+    }
+  }));
+
+  const classes = useStyles()
+
   return (
     <React.Fragment>
       {search ? (
-        <form onSubmit={searchHandler}>
-          <input 
-            label="Enter Class"
-            type="text"
-            name="course"
-            onChange={changeHandler}
-            required
-          />
-          <button>
-            Search
-          </button>
+        <form className={classes.root}>
+          <FormControl variant="outlined" className={classes.select} error={error}>
+            <InputLabel id="demo-simple-select-outlined-label">Course</InputLabel>
+            <Select
+              labelId="demo-simple-select-outlined-label"
+              id="demo-simple-select-outlined"
+              value={course}
+              onChange={changeHandler}
+              label="Course Title"
+            >
+              <MenuItem value="">
+                <em>None</em>
+              </MenuItem>
+              {classTitleList.map(title => {
+                return <MenuItem value={title}>{title}</MenuItem>
+              })}
+            </Select>
+          </FormControl>
+          <Button variant="outlined" onClick={searchHandler} className={classes.button}>
+            Submit
+          </Button>
         </form>
       ) : (
         <div>
@@ -119,8 +153,9 @@ const SVG = (props) => {
   const ref = useRef()
 
   useEffect(() => {
-    const height = 1000
-    const width = 1000
+
+    const height = window.innerHeight > 500 ? window.innerHeight : 500
+    const width = window.innerWidth > 1200 ? window.innerWidth : 1200
 
     const svg = d3.select(ref.current)
       .attr('width', width)
@@ -143,22 +178,31 @@ const SVG = (props) => {
       .append('path')
         .attr('d', d => {
           return "M" + d.y + "," + d.x
-            + "C" + (d.parent.y + 50) + "," + d.x
+            + "C" + (d.parent.y + 25) + "," + d.x
             + " " + (d.parent.y + 120) + "," + d.parent.x // 50 and 150 are coordinates of inflexion, play with it to change links shape
             + " " + d.parent.y + "," + d.parent.x;
         })
         .style('fill', "none")
         .attr('stroke', d => {
           if (d.parent.data.name === "or") {
-            return "red"
-          } else {
             return "green"
+          } else {
+            return "red"
           }
         })
+        .attr('stroke-width', 3)
 
     let tooltip = d3.select('body')
       .append('div')
-      .attr('class', 'tooltip')
+      .attr('id', 'tooltip')
+      .style('position', 'absolute')
+      .style('z-index', '10')
+      .style('visibility', 'hidden')
+      .style('background-color', 'white')
+      .style('border', 'solid')
+      .style('border-width', '2px')
+      .style('border-radius', '2px')
+      .style('padding', '5px')
 
     svg.selectAll('g')
       .data(root.descendants())
@@ -167,67 +211,74 @@ const SVG = (props) => {
       .attr('transform', d => {
         return "translate(" + d.y + "," + d.x + ")"
       })
-      .append('circle')
-        .attr('r', d => {
-          if (d.data.name === "or" || d.data.name == "and") {
-            return 1
+      .on('click', (d, i) => {
+        if (d.data.name !== "or" && d.data.name !== "and" && classList[d.data.name]) {
+          d3.select(ref.current).select('g').remove()
+          d3.select('body').selectAll('#tooltip').remove()
+          props.newSearch(d.data.name)
+        }
+      })
+      .on('mouseover', (d) => {
+        if (classList[d.data.name]) {
+          return tooltip
+            .style('visibility', 'visible')
+            .text(classList[d.data.name])
+        } else {
+          return tooltip
+            .style('visibility', 'visible')
+            .text('Description: Class Description not available.')
+        }
+      })
+      .on('mousemove', (d) => {
+        return tooltip
+          .style('top', (d3.event.pageY - 10) + 'px')
+          .style('left', (d3.event.pageX + 10) + 'px') 
+      })
+      .on('mouseout', (d) => {
+        return tooltip
+          .style('visibility', 'hidden')
+      })
+      .append('ellipse')
+        .attr('rx', d => {
+          if (d.data.name === "or" || d.data.name === "and") {
+            return 15
           } else {
-            return 6
+            return 30
           }
         })
-        .style('fill', '#f9f9f9')
-        .attr('stroke', 'black')
-        .style('stroke-width', 2)
+        .attr('ry', d => {
+          if (d.data.name === "or" || d.data.name === "and") {
+            return 14
+          } else {
+            return 15
+          }
+        })
+        .style('fill', '#a9a9a9')
         .attr('cursor', d => {
-          if (d.data.name === "or" || d.data.name == "and") {
+          if (d.data.name === "or" || d.data.name === "and") {
             return "none"
           } else {
             return "pointer"
           }
         })
-        .on('click', (d, i) => {
-          if (d.data.name !== "or" && d.data.name !== "and") {
-            props.newSearch(d.data.name)
-          }
-        })
-        .on('mouseover', (d, i) => {
-          if (classList[d.data.name]) {
-            return tooltip
-              .text(classList[d.data.name])
-              .style('visibility', 'visible')
-              .style('top', (d.x + 40) + 'px')
-              .style('left', (d.y + 80) + 'px')
-              .attr({
-                'position': 'absolute',
-                'z-index': '10',
-                'visibility': 'hidden',
-                'background-color': 'lightblue',
-                'text-align': 'center',
-                'padding': '4px',
-                'border-radius': '4px',
-                'font-weight': 'bold',
-                'color': 'orange'
-              })
-          }
-        })
-
-    
-        /*
-        .append("svg:title")
-          .text(d => {
-            if (classList[d.data.name]) {
-              return classList[d.data.name]
-            } else {
-              return "no info"
-            }
-          })
-    */
+        .attr('stroke', 'black')
+        .attr('stroke-width', '2px')
     
     svg.selectAll('g')
       .append('text')
         .text(d => {
           return d.data.name
         })
+        .attr('dx', d => {
+          if (d.data.name === "or") {
+            return -6
+          } else if (d.data.name === "and") {
+            return -9
+          } else {
+            return -28
+          }
+        })
+        .attr('dy', 3)
         .style('font-size', 12)
   })
 
