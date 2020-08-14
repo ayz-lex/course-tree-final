@@ -405,13 +405,6 @@ const SVG = (props) => {
         .attr('transform', d => {
           return "translate(" + d.x + "," + 0 + ")"
         })
-        .on('click', (d, i) => {
-          if(classList[d.data]) {
-            d3.select(ref2.current).select('g').remove()
-            d3.select('body').selectAll('#tooltip').remove()
-            props.newSearch(d.data)
-          }
-        })
         .on('mouseover', (d) => {
           if (classList[d.data]) {
             return tooltip
