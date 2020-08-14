@@ -12,6 +12,8 @@ import {
   Button,
   InputLabel,
   MenuItem,
+  Paper,
+  Typography
 } from '@material-ui/core'
 
 import {makeStyles} from '@material-ui/core/styles'
@@ -21,11 +23,13 @@ const App = () => {
   const [search, setSearch] = useState(true);
   const [tree, setTree] = useState();
   const [error, setError] = useState();
+  const [topological, setTopological] = useState([]);
 
   const onSearch = () => {
-    let visited = new Set()
 
     if (data[course]) {
+      let visited = new Set()
+      
       let hierarchy = {"name": course}
 
       visited.add(course)
@@ -69,10 +73,81 @@ const App = () => {
         buildHierarchy(data[course], hierarchy["children"])
       }
 
+      // topological sort
+
+      let order = []
+      visited = new Set()
+
+      const top = (curCourse) => {
+        if (!visited.has(curCourse)) {
+          if ((data[curCourse] && !data[curCourse].type) || curCourse.substring(0, 4) !== "COMP") {
+          } else if (data[curCourse].type === "leaf") {
+            if (!visited.has(data[curCourse].val)) {
+              top(data[curCourse].val)
+            }
+          } else if (data[curCourse].type === "or") {
+            const children = data[curCourse].val
+            let found = false
+            for (let i = 0; i < children.length; i++) {
+              if (visited.has(children[i].val)) {
+                found = true
+                break
+              }
+            }
+            if (!found) {
+              let chosen = false
+              for (let i = 0; i < children.length; i++) {
+                if (data[children[i].val]) {
+                  top(children[i].val)
+                  chosen = true
+                  break
+                }
+              } 
+              if (!chosen) {
+                order.push(children[0].val)
+                visited.add(children[0].val)
+              }
+            }
+          } else if (data[curCourse].type === "and") {
+            data[curCourse].val.forEach(child => {
+              if (child.type === "leaf") {
+                top(child.val)
+              } else if (child.type === "or") {
+                const children = child.val
+                let found = false
+                for (let i = 0; i < children.length; i++) {
+                  if (visited.has(children[i].val)) {
+                    found = true
+                    break
+                  }
+                }
+                if (!found) {
+                  let chosen = false
+                  for (let i = 0; i < children.length; i++) {
+                    if (data[children[i].val]) {
+                      top(children[i].val)
+                      chosen = true
+                      break
+                    }
+                  }
+                  if (!chosen) {
+                    order.push(children[0].val)
+                    visited.add(children[0].val)
+                  }
+                }
+              } 
+            })
+          }
+          order.push(curCourse)
+          visited.add(curCourse)
+        }
+      }
+
+      top(course)
+      setTopological(order)
       setError(false)
       setTree(hierarchy)
       setSearch(false)
-
     } else {
       setError(true)
     }
@@ -92,6 +167,10 @@ const App = () => {
     setSearch(true)
     setCourse(newCourse)
     onSearch()
+  }
+
+  const returnSearch = () => {
+    setSearch(true)
   }
 
   const useStyles = makeStyles((theme) => ({
@@ -140,8 +219,10 @@ const App = () => {
       ) : (
         <div>
           <SVG 
+            order={topological}
             tree={{...tree}} 
             newSearch={newSearch}
+            returnSearch={returnSearch}
           />
         </div>
       )}
@@ -151,11 +232,12 @@ const App = () => {
 
 const SVG = (props) => {
   const ref = useRef()
+  const ref2 = useRef()
 
   useEffect(() => {
 
-    const height = window.innerHeight > 500 ? window.innerHeight : 500
-    const width = window.innerWidth > 1200 ? window.innerWidth : 1200
+    const height = window.innerHeight < 800 ? window.innerHeight : 800
+    const width = window.innerWidth < 1300 ? window.innerWidth : 1300
 
     const svg = d3.select(ref.current)
       .attr('width', width)
@@ -208,52 +290,38 @@ const SVG = (props) => {
       .data(root.descendants())
       .enter()
       .append('g')
-      .attr('transform', d => {
-        return "translate(" + d.y + "," + d.x + ")"
-      })
-      .on('click', (d, i) => {
-        if (d.data.name !== "or" && d.data.name !== "and" && classList[d.data.name]) {
-          d3.select(ref.current).select('g').remove()
-          d3.select('body').selectAll('#tooltip').remove()
-          props.newSearch(d.data.name)
-        }
-      })
-      .on('mouseover', (d) => {
-        if (classList[d.data.name]) {
-          return tooltip
-            .style('visibility', 'visible')
-            .text(classList[d.data.name])
-        } else {
-          return tooltip
-            .style('visibility', 'visible')
-            .text('Description: Class Description not available.')
-        }
-      })
-      .on('mousemove', (d) => {
-        return tooltip
-          .style('top', (d3.event.pageY - 10) + 'px')
-          .style('left', (d3.event.pageX + 10) + 'px') 
-      })
-      .on('mouseout', (d) => {
-        return tooltip
-          .style('visibility', 'hidden')
-      })
-      .append('ellipse')
-        .attr('rx', d => {
-          if (d.data.name === "or" || d.data.name === "and") {
-            return 15
-          } else {
-            return 30
+        .attr('transform', d => {
+          return "translate(" + d.y + "," + d.x + ")"
+        })
+        .on('click', (d, i) => {
+          if (d.data.name !== "or" && d.data.name !== "and" && classList[d.data.name]) {
+            d3.select(ref.current).select('g').remove()
+            d3.select('body').selectAll('#tooltip').remove()
+            props.newSearch(d.data.name)
           }
         })
-        .attr('ry', d => {
-          if (d.data.name === "or" || d.data.name === "and") {
-            return 14
-          } else {
-            return 15
+        .on('mouseover', (d) => {
+          if (classList[d.data.name]) {
+            return tooltip
+              .style('visibility', 'visible')
+              .text(classList[d.data.name])
+          } else if (d.data.name !== "or" || d.data.name !== "and") {
+            return tooltip
+              .style('visibility', 'visible')
+              .text('Description: Class Description not available.')
           }
         })
-        .style('fill', '#a9a9a9')
+        .on('mousemove', (d) => {
+          if (d.data.name !== "or" || d.data.name !== "and") {
+            return tooltip
+              .style('top', (d3.event.pageY - 10) + 'px')
+              .style('left', (d3.event.pageX + 10) + 'px') 
+          }
+        })
+        .on('mouseout', (d) => {
+          return tooltip
+            .style('visibility', 'hidden')
+        })
         .attr('cursor', d => {
           if (d.data.name === "or" || d.data.name === "and") {
             return "none"
@@ -261,9 +329,25 @@ const SVG = (props) => {
             return "pointer"
           }
         })
-        .attr('stroke', 'black')
-        .attr('stroke-width', '2px')
-    
+        .append('ellipse')
+          .attr('rx', d => {
+            if (d.data.name === "or" || d.data.name === "and") {
+              return 15
+            } else {
+              return 30
+            }
+          })
+          .attr('ry', d => {
+            if (d.data.name === "or" || d.data.name === "and") {
+              return 14
+            } else {
+              return 15
+            }
+          })
+          .style('fill', '#f9f9f9')
+          .attr('stroke', 'black')
+          .attr('stroke-width', 2)
+      
     svg.selectAll('g')
       .append('text')
         .text(d => {
@@ -280,10 +364,136 @@ const SVG = (props) => {
         })
         .attr('dy', 3)
         .style('font-size', 12)
+
+    const gap = props.order.length === 1 ? 0 : Math.floor((width - 100) / (props.order.length - 1))
+    const data = props.order.reduce((acc, cur) => {
+      if (!acc.length) {
+        acc.push({
+          data: cur,
+          x: 0
+        })
+      } else {
+        acc.push({
+          data: cur,
+          x: acc[acc.length - 1].x + gap
+        })
+      }
+      return acc
+    }, [])
+
+    const start = 0
+    const stop = data[data.length - 1].x
+
+    const svg2 = d3.select(ref2.current)
+      .attr('width', width)
+      .attr('height', 200)
+      .append('g')
+        .attr("transform", "translate(40, 100)")
+    
+    svg2.append('line')
+      .attr('x1', start)
+      .attr('y1', 0)
+      .attr('x2', stop)
+      .attr('y2', 0)
+      .attr('stroke', 'black')
+      .attr('stroke-width', 2)
+    
+    svg2.selectAll('g')
+      .data(data)
+      .enter()
+      .append('g')
+        .attr('transform', d => {
+          return "translate(" + d.x + "," + 0 + ")"
+        })
+        .on('click', (d, i) => {
+          if(classList[d.data]) {
+            d3.select(ref2.current).select('g').remove()
+            d3.select('body').selectAll('#tooltip').remove()
+            props.newSearch(d.data)
+          }
+        })
+        .on('mouseover', (d) => {
+          if (classList[d.data]) {
+            return tooltip
+              .style('visibility', 'visible')
+              .text(classList[d.data])
+          } else {
+            return tooltip
+              .style('visibility', 'visible')
+              .text('Description: Class Description not available.')
+          }
+        })
+        .on('mousemove', (d) => {
+          return tooltip
+            .style('top', (d3.event.pageY - 10) + 'px')
+            .style('left', (d3.event.pageX + 10) + 'px') 
+        })
+        .on('mouseout', (d) => {
+          return tooltip
+            .style('visibility', 'hidden')
+        })
+        .attr('cursor', d => {
+          return "pointer"
+        })
+        .append('circle')
+          .attr('r', 30)
+          .style('fill', '#f9f9f9')
+          .style('stroke', 'black')
+          .style('stroke-width', 2)
+      
+    svg2.selectAll('g')
+      .append('text')
+        .text(d => {
+          return d.data
+        })
+        .attr('dx', -27)
+        .attr('dy', 3)
+        .style('font-size', 12)
+      
   })
 
+  const useStyles = makeStyles((theme) => ({
+    root: {
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingTop: window.innerHeight / 20
+    },
+    button: {
+      width: '100px'
+    },
+    paper: {
+      marginTop: '20px',
+      marginLeft: '20px',
+    },
+    title: {
+      marginLeft: '20px',
+      marginTop: '20px',
+      fontSize: '20px'
+    }
+  }));
+
+  const classes = useStyles()
+
   return (
-    <svg ref={ref}></svg>
+    <div className={classes.root}>
+      <Button variant="outlined" onClick={props.returnSearch} className={classes.button}>
+        Return
+      </Button>
+      <Paper className={classes.paper}>
+        <Typography variant="h1" className={classes.title}>
+          Topological Ordering (Optimal)
+        </Typography>
+        <svg ref={ref2}></svg>
+      </Paper>
+      <Paper className={classes.paper}>
+        <Typography variant="h1" className={classes.title}>
+          Prerequisites Tree (And-Or, No Repeats)
+        </Typography>
+        <svg ref={ref}></svg>
+      </Paper>
+    </div>
   )
 }
 
